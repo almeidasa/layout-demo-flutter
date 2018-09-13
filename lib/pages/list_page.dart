@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:layout_demo_flutter/layout_type.dart';
 import 'package:layout_demo_flutter/pages/main_app_bar.dart';
 
-class Contact {
-  Contact({this.name, this.email});
-  final String name;
-  final String email;
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+List<Issues> allIssues = [];
+class Issues {
+  Issues({this.hours, this.comments});
+
+  final String hours;
+  final String comments;
 }
 
 class ListPage extends StatelessWidget implements HasLayoutGroup {
@@ -15,6 +22,7 @@ class ListPage extends StatelessWidget implements HasLayoutGroup {
 
   @override
   Widget build(BuildContext context) {
+    _createList();
     return Scaffold(
       appBar: MainAppBar(
         layoutGroup: layoutGroup,
@@ -29,42 +37,47 @@ class ListPage extends StatelessWidget implements HasLayoutGroup {
 
   Widget _buildContent() {
     return ListView.builder(
-        itemCount: allContacts.length,
+        itemCount: allIssues.length,
         itemBuilder: (BuildContext content, int index) {
-          Contact contact = allContacts[index];
-          return ContactListTile(contact);
+          Issues issue = allIssues[index];
+          return IssueList(issue);
         });
   }
 }
 
-class ContactListTile extends ListTile {
-  ContactListTile(Contact contact)
-      : super(
-    title: Text(contact.name),
-    subtitle: Text(contact.email),
-    leading: CircleAvatar(child: Text(contact.name[0])),
-  );
+void _createList() {
+  Map data;
+  String apiKey = 'd9991ea89ca81352c9dce1182bc47a1f319065fa';
+  String userId = '88';
+  String spentOn = '2018-08-29';
+
+  Future<void> getData() async {
+    try {
+      var response = await http.get(
+          Uri.encodeFull(
+              "https://projetos.supera.com.br/time_entries.json?key=" + apiKey +
+                  "&user_id=" + userId +
+                  "&spent_on=" + spentOn + "&limit=10"),
+          headers: {"Accept": "application/json"});
+
+      data = json.decode(response.body);
+
+      allIssues.clear();
+      for (int i = 0; i < data.length; i++) {
+        allIssues.add(Issues(hours: data['time_entries'][i]['hours'].toString(),
+            comments: data['time_entries'][i]['comments'].toString()));
+        print(data['time_entries'][i]['comments'].toString());
+      }
+
+    } catch (e) {
+      print('Erro na requisição: ' + e.toString());
+    }
+  }
+  getData();
 }
 
-List<Contact> allContacts = [
-  Contact(name: 'Isa Tusa', email: 'isa.tusa@me.com'),
-  Contact(name: 'Racquel Ricciardi', email: 'racquel.ricciardi@me.com'),
-  Contact(name: 'Teresita Mccubbin', email: 'teresita.mccubbin@me.com'),
-  Contact(name: 'Rhoda Hassinger', email: 'rhoda.hassinger@me.com'),
-  Contact(name: 'Carson Cupps', email: 'carson.cupps@me.com'),
-  Contact(name: 'Devora Nantz', email: 'devora.nantz@me.com'),
-  Contact(name: 'Tyisha Primus', email: 'tyisha.primus@me.com'),
-  Contact(name: 'Muriel Lewellyn', email: 'muriel.lewellyn@me.com'),
-  Contact(name: 'Hunter Giraud', email: 'hunter.giraud@me.com'),
-  Contact(name: 'Corina Whiddon', email: 'corina.whiddon@me.com'),
-  Contact(name: 'Meaghan Covarrubias', email: 'meaghan.covarrubias@me.com'),
-  Contact(name: 'Ulysses Severson', email: 'ulysses.severson@me.com'),
-  Contact(name: 'Richard Baxter', email: 'richard.baxter@me.com'),
-  Contact(name: 'Alessandra Kahn', email: 'alessandra.kahn@me.com'),
-  Contact(name: 'Libby Saari', email: 'libby.saari@me.com'),
-  Contact(name: 'Valeria Salvador', email: 'valeria.salvador@me.com'),
-  Contact(name: 'Fredrick Folkerts', email: 'fredrick.folkerts@me.com'),
-  Contact(name: 'Delmy Izzi', email: 'delmy.izzi@me.com'),
-  Contact(name: 'Leann Klock', email: 'leann.klock@me.com'),
-  Contact(name: 'Rhiannon Macfarlane', email: 'rhiannon.macfarlane@me.com'),
-];
+class IssueList extends ListTile {
+  IssueList(Issues issue) : super(title: Text(issue.hours),subtitle: Text(issue.comments),);
+}
+
+
